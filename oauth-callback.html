@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞书授权 - Obsidian Feishu Sync</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #2d3748;
+            margin-bottom: 8px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #718096;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        .success-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            background: #48bb78;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+        }
+        .error-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 24px;
+            background: #f56565;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+        }
+        .code-container {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 24px 0;
+            position: relative;
+        }
+        .code-label {
+            font-size: 12px;
+            color: #718096;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .code-value {
+            font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+            font-size: 16px;
+            color: #2d3748;
+            word-break: break-all;
+            line-height: 1.6;
+            user-select: all;
+        }
+        .copy-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover {
+            background: #5a67d8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+        .copy-btn.copied {
+            background: #48bb78;
+        }
+        .instructions {
+            background: #edf2f7;
+            border-left: 4px solid #667eea;
+            padding: 16px;
+            margin-top: 24px;
+            border-radius: 4px;
+        }
+        .instructions h3 {
+            color: #2d3748;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .instructions ol {
+            margin-left: 20px;
+            color: #4a5568;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .error-message {
+            color: #e53e3e;
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div id="success-state" style="display: none;">
+            <div class="success-icon">✓</div>
+            <h1>授权成功</h1>
+            <p class="subtitle">请复制下方授权码并粘贴到 Obsidian 插件中</p>
+
+            <div class="code-container">
+                <div class="code-label">授权码 (Authorization Code)</div>
+                <div class="code-value" id="code-display"></div>
+            </div>
+
+            <button class="copy-btn" id="copy-btn" onclick="copyCode()">
+                <span id="btn-text">复制授权码</span>
+            </button>
+
+            <div class="instructions">
+                <h3>📋 接下来的步骤：</h3>
+                <ol>
+                    <li>点击上方按钮复制授权码</li>
+                    <li>返回 Obsidian</li>
+                    <li>在弹出的对话框中粘贴授权码</li>
+                    <li>点击「确认」完成授权</li>
+                </ol>
+            </div>
+        </div>
+
+        <div id="error-state" style="display: none;">
+            <div class="error-icon">✕</div>
+            <h1>授权失败</h1>
+            <p class="subtitle">未能获取授权码</p>
+            <div class="error-message" id="error-message"></div>
+        </div>
+    </div>
+
+    <script>
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        function copyCode() {
+            const code = document.getElementById('code-display').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                const btn = document.getElementById('copy-btn');
+                const btnText = document.getElementById('btn-text');
+                btn.classList.add('copied');
+                btnText.textContent = '✓ 已复制';
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btnText.textContent = '复制授权码';
+                }, 2000);
+            });
+        }
+
+        // Parse URL parameters
+        const code = getQueryParam('code');
+        const error = getQueryParam('error');
+        const errorDesc = getQueryParam('error_description');
+
+        if (code) {
+            document.getElementById('code-display').textContent = code;
+            document.getElementById('success-state').style.display = 'block';
+        } else {
+            const errorMsg = error
+                ? `错误: ${error}${errorDesc ? ' - ' + errorDesc : ''}`
+                : '未在 URL 中找到授权码参数';
+            document.getElementById('error-message').textContent = errorMsg;
+            document.getElementById('error-state').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
